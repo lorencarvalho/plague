@@ -31,7 +31,7 @@ class Venv(setuptools.Command):
 
 setuptools.setup(
     name='plague',
-    version='0.0.1',
+    version='0.0.2',
     description="",
     author="Loren Carvalho",
     author_email='me@loren.pizza',
