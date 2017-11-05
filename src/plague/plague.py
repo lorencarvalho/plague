@@ -55,15 +55,14 @@ class NaivePlagueClient(object):
         self.get_client().send(bytes(infection))
 
 
-class PlagueNode(object):
-    shared = {}
-
+class Node(object):
     def __init__(self, host, port, contaminate=None, loop=None):
         self.host = host
         self.port = port
         self.loop = loop or asyncio.get_event_loop()
         self.susceptible_nodes = set(contaminate) if contaminate else set()
         self.queued_messages = collections.deque([], 10)
+        self.shared = {}
 
     @property
     def addr(self):
@@ -132,7 +131,8 @@ class PlagueNode(object):
             susceptible_nodes = self._combined_susceptible_nodes(message.susceptible_nodes, message.infected_nodes)
             selected_node = random.choice(list(susceptible_nodes))
         except IndexError:
-            log.info("No susceptible nodes available, are we done here?")
+            log.info("No susceptible nodes available, queueing")
+            self.queued_messages.append(message)
             return
 
         log.debug('-' * 50)
@@ -155,7 +155,7 @@ class PlagueNode(object):
         message = Infection(self.host, self.port, kwargs, self.susceptible_nodes)
         self.loop.create_task(self._infect(message))
 
-    def server(self):
+    def serve(self):
         """ Returns an asyncio stream server scheduled on the event loop """
         for interval, func in self.scheduled_tasks:
             task = PeriodicTask(interval, func)
@@ -185,9 +185,9 @@ def run_in_loop(server, loop=None):
         loop.close()
 
 
-class BackgroundPlagueNode(threading.Thread):
+class BackgroundNode(threading.Thread):
     def __init__(self, port, contaminate=[], loop=None, *args, **kwargs):
-        self.node = PlagueNode(
+        self.node = Node(
             port,
             contaminate=contaminate,
             loop=loop or asyncio.get_event_loop()
