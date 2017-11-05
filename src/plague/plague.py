@@ -13,6 +13,16 @@ from .infections import Infection
 log = logging.getLogger(__name__)
 
 
+def infect_node(node_addr, **kwargs):
+    """For debugging/testing
+
+    This is a really hacky way to infect a running plague node.
+
+    """
+    infection = Infection('127.0.01', 0, kwargs, susceptible_nodes=[node_addr])
+    socket.create_connection(node_addr).send(bytes(infection))
+
+
 class PeriodicTask:
     def __init__(self, interval, func, loop=None):
         """
@@ -35,24 +45,6 @@ class PeriodicTask:
         log.debug('Executing periodic task: %s', self.func.__name__)
         self.func()
         self._register()
-
-
-class NaivePlagueClient(object):
-    def __init__(self, addr, contaminate=[]):
-        """
-        Mostly for debugging/testing purposes, this is a really
-        hacky way to infect a running plague node
-
-        """
-        self.addr = addr
-        self.susceptible_nodes = set(contaminate)
-
-    def get_client(self, addr):
-        return socket.create_connection(addr)
-
-    def send(self, **kwargs):
-        infection = Infection('127.0.0.1', 0, kwargs, self.susceptible_nodes)
-        self.get_client().send(bytes(infection))
 
 
 class Node(object):
